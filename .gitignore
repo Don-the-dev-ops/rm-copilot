@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# generated data: rebuild it from the seed instead of committing it
+out/
+runs/
+bank.db 
+answers/ 
