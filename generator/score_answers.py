@@ -13,7 +13,7 @@ import csv
 import sys
 from pathlib import Path
 
-STORIES = ["idle_cash", "forex_growth", "upgrade_candidate", "anomaly"]
+STORIES = ["idle_cash", "forex_growth", "upgrade_candidate", "anomaly", "salary_increase"]
 
 p = argparse.ArgumentParser()
 p.add_argument("answers")
@@ -53,4 +53,4 @@ print(f"  Correct         {len(found):>5,}")
 print(f"  False alarms    {len(false_alarms):>5,}   (flagged, but not this story)")
 print(f"  Missed          {len(missed):>5,}   (this story, but not flagged)")
 print(f"\n  Precision {precision:6.1%}   of the ones you flagged, how many were right")
-print(f"  Recall    {recall:6.1%}   of the real ones, how many you found")
+print(f"  Recall    {recall:6.1%}   of the real ones, how many you found") 

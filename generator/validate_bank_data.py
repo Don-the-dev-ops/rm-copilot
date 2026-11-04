@@ -42,7 +42,8 @@ TFSA_ANNUAL_LIMITS = {**{y: 30_000 for y in (2015, 2016)}, **{y: 33_000 for y in
 TFSA_LIFETIME = 500_000
 CREDIT_LIMIT_X_INCOME = 2.5
 INCOME_BANDS = {"Private Banking": (58_000, 91_999), "Signature": (92_000, 260_000)}
-STORY_SHARES = {"none": 0.63, "idle_cash": 0.12, "forex_growth": 0.12, "upgrade_candidate": 0.10, "anomaly": 0.03}
+STORY_SHARES = {"none": 0.58, "idle_cash": 0.12, "forex_growth": 0.12, "upgrade_candidate": 0.10, "anomaly": 0.03,
+                "salary_increase": 0.05}
 
 
 class Report:
@@ -282,6 +283,21 @@ def run_checks(t, story, planted_ids, run_date: date, months: int, rep: Report):
     g, ctrl = growth(stories["forex_growth"]), growth([c for c in clients if story[c] != "forex_growth"])
     rep.check("signal", f"forex_growth clients' foreign spend grows ({g:.1f}x) while others stay flat ({ctrl:.1f}x)",
               [] if g > 2 and 0.6 < ctrl < 1.6 else [f"growth {g:.1f}x, control {ctrl:.1f}x"], len(stories["forex_growth"]))
+
+    salaries = defaultdict(list)  # each client's salary payments, oldest first
+    for x in txns:
+        if x["merchant_category"] == "income":
+            salaries[acct_client[x["account_id"]]].append(x["amount_zar"])
+    fails = []
+    for cid, pays in salaries.items():
+        raises = [new / old for old, new in zip(pays, pays[1:]) if new != old]
+        if story[cid] == "salary_increase":
+            if len(raises) != 1 or not 1.14 <= raises[0] <= 1.31 or pays[-1] != income[cid]:
+                fails.append(f"{cid} salary changes {raises}")
+        elif raises or pays[-1] != income[cid]:
+            fails.append(f"{cid} salary changed but story is {story[cid]}")
+    rep.check("signal", "salary_increase clients get one 15-30% raise; everyone else's salary never changes",
+              fails, len(salaries))
 
     planted = [x for x in txns if x["txn_id"] in planted_ids]
     per_client = defaultdict(int)

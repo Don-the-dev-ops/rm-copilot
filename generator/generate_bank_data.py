@@ -207,8 +207,8 @@ def generate(n_clients: int, months: int, seed: int, run_date: date):
 
         # Planted stories: the answer key goes to a separate ground-truth file
         story = rng.choices(
-            ["none", "idle_cash", "forex_growth", "upgrade_candidate", "anomaly"],
-            weights=[63, 12, 12, 10, 3])[0]
+            ["none", "idle_cash", "forex_growth", "upgrade_candidate", "anomaly", "salary_increase"],
+            weights=[58, 12, 12, 10, 3, 5])[0]
         if story == "upgrade_candidate":
             segment, income = "Private Banking", int(round(rng.uniform(92_000, 140_000), -2))
 
@@ -295,19 +295,27 @@ def generate(n_clients: int, months: int, seed: int, run_date: date):
         # Most of what's left is moved to savings each month. idle_cash clients don't do this,
         # which is exactly how their cash piles up.
 
+        # salary_increase story: a lower salary until a 15-30% raise partway through the history
+        old_income, raise_day = income, start
+        if story == "salary_increase":
+            old_income = int(round(income / rng.uniform(1.15, 1.30), -2))
+            raise_day = rand_date(rng, start + timedelta(days=90), run_date - timedelta(days=60))
+
         # Transactions
         debit_card, credit_card = client_cards
         client_txns, abroad_days = [], set()
         day = start
         while day <= run_date:
+            salary = income if day >= raise_day else old_income
             if day.day == 25:  # salary
-                client_txns.append(txn(rng, txn_acct, None, day, 9, income, "Salary - Employer",
+                client_txns.append(txn(rng, txn_acct, None, day, 9, salary, "Salary - Employer",
                                        "income", "ZA", "EFT"))
             if day.day == 26 and story != "idle_cash":  # monthly transfer to savings and investments
                 debt_now = sum(pay for _, loan_start, pay in client_loans if day > loan_start)  # only loans already running
-                surplus = income - debt_now - budget
-                client_txns.append(txn(rng, txn_acct, None, day, 10, -surplus * rng.uniform(0.7, 0.9),  # keep some headroom for travel
-                                       "Transfer to investments", "savings_transfer", "ZA", "Transfer"))
+                surplus = salary - debt_now - budget
+                if surplus > 0:  # before a raise there may be nothing left to invest
+                    client_txns.append(txn(rng, txn_acct, None, day, 10, -surplus * rng.uniform(0.7, 0.9),  # keep some headroom for travel
+                                           "Transfer to investments", "savings_transfer", "ZA", "Transfer"))
             if day.day == 1:  # loan debit orders
                 for loan, loan_start, pay in client_loans:
                     if day > loan_start:
