@@ -11,3 +11,6 @@ $BudgetName     = "budget-rm-copilot"
 $BudgetAmount   = 500            # in your billing currency
 $AlertPercents  = @(50, 80, 100)
 $AlertEmail     = "<your-email>"
+
+$StorageAccount = "<globally-unique-lowercase-name>"
+$Containers     = @("landing", "bronze", "silver", "gold")
