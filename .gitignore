@@ -224,3 +224,5 @@ out/
 runs/
 bank.db 
 answers/ 
+# Real infra settings stay local
+infra/00_config.ps1
