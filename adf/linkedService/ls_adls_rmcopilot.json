@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "type": "AzureBlobFS",
+    "description": "RM Copilot data lake (ADLS Gen2). Signs in with the factory's managed identity, so no keys are stored.",
+    "typeProperties": {
+      "url": "https://{{StorageAccount}}.dfs.core.windows.net"
+    }
+  }
+}

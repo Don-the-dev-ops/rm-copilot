@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "type": "Binary",
+    "description": "Target shelf: bronze/<table>/ingest_date=<yyyy-MM-dd>/. One folder per load, kept forever.",
+    "linkedServiceName": {
+      "referenceName": "ls_adls_rmcopilot",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "table":      { "type": "string" },
+      "ingestDate": { "type": "string" }
+    },
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "bronze",
+        "folderPath": {
+          "value": "@concat(dataset().table, '/ingest_date=', dataset().ingestDate)",
+          "type": "Expression"
+        }
+      }
+    }
+  }
+}

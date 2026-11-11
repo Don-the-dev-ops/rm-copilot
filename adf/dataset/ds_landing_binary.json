@@ -1,0 +1,20 @@
+{
+  "properties": {
+    "type": "Binary",
+    "description": "Source shelf: one table's folder in the landing container. Files are moved as-is (byte for byte).",
+    "linkedServiceName": {
+      "referenceName": "ls_adls_rmcopilot",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "table": { "type": "string" }
+    },
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "landing",
+        "folderPath": { "value": "@dataset().table", "type": "Expression" }
+      }
+    }
+  }
+}

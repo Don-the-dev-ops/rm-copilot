@@ -1,0 +1,72 @@
+{
+  "properties": {
+    "description": "Copies every table from landing into bronze/<table>/ingest_date=<run date>/, byte for byte.",
+    "parameters": {
+      "tables": {
+        "type": "array",
+        "defaultValue": [
+          "relationship_managers",
+          "clients",
+          "accounts",
+          "cards",
+          "loans",
+          "transactions"
+        ]
+      }
+    },
+    "activities": [
+      {
+        "name": "ForEachTable",
+        "type": "ForEach",
+        "typeProperties": {
+          "items": { "value": "@pipeline().parameters.tables", "type": "Expression" },
+          "isSequential": false,
+          "batchCount": 6,
+          "activities": [
+            {
+              "name": "CopyLandingToBronze",
+              "type": "Copy",
+              "policy": {
+                "timeout": "0.01:00:00",
+                "retry": 2,
+                "retryIntervalInSeconds": 60
+              },
+              "inputs": [
+                {
+                  "referenceName": "ds_landing_binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "table": { "value": "@item()", "type": "Expression" }
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "referenceName": "ds_bronze_binary",
+                  "type": "DatasetReference",
+                  "parameters": {
+                    "table": { "value": "@item()", "type": "Expression" },
+                    "ingestDate": {
+                      "value": "@formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd')",
+                      "type": "Expression"
+                    }
+                  }
+                }
+              ],
+              "typeProperties": {
+                "source": {
+                  "type": "BinarySource",
+                  "storeSettings": { "type": "AzureBlobFSReadSettings", "recursive": true }
+                },
+                "sink": {
+                  "type": "BinarySink",
+                  "storeSettings": { "type": "AzureBlobFSWriteSettings" }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

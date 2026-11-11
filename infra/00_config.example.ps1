@@ -14,3 +14,5 @@ $AlertEmail     = "<your-email>"
 
 $StorageAccount = "<globally-unique-lowercase-name>"
 $Containers     = @("landing", "bronze", "silver", "gold")
+
+$DataFactory    = "<globally-unique-factory-name>"
