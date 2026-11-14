@@ -8,7 +8,7 @@ $source = Join-Path $PSScriptRoot "..\generator\out\bronze\*"
 $target = "https://$StorageAccount.dfs.core.windows.net/landing/"
 
 $env:AZCOPY_AUTO_LOGIN_TYPE = "AZCLI"
-azcopy copy $source $target --recursive
+azcopy copy $source $target --recursive --overwrite=ifSourceNewer
 if ($LASTEXITCODE -ne 0) {
     Write-Host "FAILED at: upload to landing" -ForegroundColor Red
     exit 1

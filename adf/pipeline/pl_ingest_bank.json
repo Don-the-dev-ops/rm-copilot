@@ -1,6 +1,6 @@
 {
   "properties": {
-    "description": "Copies every table from landing into bronze/<table>/ingest_date=<run date>/, byte for byte.",
+    "description": "Copies files that landed in landing between windowStart and windowEnd into bronze/<table>/ingest_date=<run date>/, byte for byte.",
     "parameters": {
       "tables": {
         "type": "array",
@@ -12,6 +12,14 @@
           "loans",
           "transactions"
         ]
+      },
+      "windowStart": {
+        "type": "string",
+        "defaultValue": "2000-01-01T00:00:00Z"
+      },
+      "windowEnd": {
+        "type": "string",
+        "defaultValue": "2100-01-01T00:00:00Z"
       }
     },
     "activities": [
@@ -56,7 +64,12 @@
               "typeProperties": {
                 "source": {
                   "type": "BinarySource",
-                  "storeSettings": { "type": "AzureBlobFSReadSettings", "recursive": true }
+                  "storeSettings": {
+                    "type": "AzureBlobFSReadSettings",
+                    "recursive": true,
+                    "modifiedDatetimeStart": { "value": "@pipeline().parameters.windowStart", "type": "Expression" },
+                    "modifiedDatetimeEnd": { "value": "@pipeline().parameters.windowEnd", "type": "Expression" }
+                  }
                 },
                 "sink": {
                   "type": "BinarySink",
