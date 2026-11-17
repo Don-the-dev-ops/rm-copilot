@@ -39,6 +39,9 @@
                 "retry": 2,
                 "retryIntervalInSeconds": 60
               },
+              "userProperties": [
+                { "name": "table", "value": "@item()" }
+              ],
               "inputs": [
                 {
                   "referenceName": "ds_landing_binary",
