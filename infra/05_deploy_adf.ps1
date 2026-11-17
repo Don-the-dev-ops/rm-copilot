@@ -38,6 +38,7 @@ $kinds = [ordered]@{
     linkedService = "linkedservices"
     dataset       = "datasets"
     pipeline      = "pipelines"
+    trigger       = "triggers"
 }
 
 foreach ($kind in $kinds.Keys) {
@@ -58,6 +59,13 @@ foreach ($kind in $kinds.Keys) {
         # Write the filled-in JSON to a temp file (UTF-8, no hidden byte-order mark).
         $tmp = Join-Path $env:TEMP "adf-$name.json"
         [IO.File]::WriteAllText($tmp, $json)
+
+        # A running trigger can't be updated, so stop it first.
+        # If the trigger doesn't exist yet this call fails harmlessly, so its error is hidden.
+        # Deploying never starts a trigger: you start it yourself, so nothing runs (or costs) by surprise.
+        if ($kind -eq "trigger") {
+            az rest --method post --url "$base/triggers/$($name)/stop?api-version=$api" --output none 2>$null
+        }
 
         # PUT it to the factory: create it, or update it to match the file.
         az rest --method put --url "$base/$($kinds[$kind])/$($name)?api-version=$api" --body "@$tmp" --output none

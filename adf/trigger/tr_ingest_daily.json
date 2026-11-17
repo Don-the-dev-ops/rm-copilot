@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "description": "Daily ingest: one 24-hour window per day, back to back with no gaps or overlaps. Each window's start and end are passed to pl_ingest_bank.",
+    "type": "TumblingWindowTrigger",
+    "pipeline": {
+      "pipelineReference": {
+        "referenceName": "pl_ingest_bank",
+        "type": "PipelineReference"
+      },
+      "parameters": {
+        "windowStart": "@trigger().outputs.windowStartTime",
+        "windowEnd": "@trigger().outputs.windowEndTime"
+      }
+    },
+    "typeProperties": {
+      "frequency": "Hour",
+      "interval": 24,
+      "startTime": "2026-11-17T10:26:42Z",
+      "delay": "00:00:00",
+      "maxConcurrency": 1,
+      "retryPolicy": { "count": 2, "intervalInSeconds": 300 },
+      "dependsOn": []
+    }
+  }
+}
