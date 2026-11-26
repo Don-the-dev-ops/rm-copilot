@@ -16,3 +16,7 @@ $StorageAccount = "<globally-unique-lowercase-name>"
 $Containers     = @("landing", "bronze", "silver", "gold")
 
 $DataFactory    = "<globally-unique-factory-name>"
+
+$SqlServer    = "<globally-unique-lowercase-name>"   # e.g. sql-rmcopilot-dh01
+$SqlDatabase  = "rmcopilot"
+$SqlLocation  = $Location                            # same region as the lake
