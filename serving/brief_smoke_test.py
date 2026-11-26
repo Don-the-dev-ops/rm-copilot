@@ -16,6 +16,7 @@ Needs in serving/.env:  OPENROUTER_API_KEY, OPENROUTER_MODEL  (plus SQL_SERVER, 
 import json
 import os
 import sys
+import time
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -25,9 +26,11 @@ from dotenv import load_dotenv
 from load_gold_to_sql import HERE, connect   # same sign-in as the loader, no second copy of that code
 
 load_dotenv(HERE / ".env")
-API_KEY = os.environ["OPENROUTER_API_KEY"]
-MODEL = os.environ["OPENROUTER_MODEL"]
-PROMPT_VERSION = "v3"
+# Which LLM provider to call: any OpenAI-format API (DeepSeek, OpenRouter, Ollama). Set in serving/.env.
+BASE_URL = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+API_KEY = os.getenv("LLM_API_KEY") or os.environ["OPENROUTER_API_KEY"]
+MODEL = os.getenv("LLM_MODEL") or os.environ["OPENROUTER_MODEL"]
+PROMPT_VERSION = "v7"
 
 # ----------------------------------------------------------------------------- the prompt
 # The system prompt is the AI's standing instructions. Changing it changes every brief,
@@ -42,11 +45,17 @@ Rules:
 - "signals" lists why this client is on the RM's list today. Explain each one using its supporting numbers.
 - If "possible_fraud" is present, the whole brief is about the fraud and nothing else: headline, why now,
   action and watch out. The RM must confirm whether the client made the payment, without accusing them.
-  Do not mention any product, investment, savings or credit in a fraud brief.
-- Affordability: if debt_to_annual_income is above 2.0, do not suggest new credit (loans, overdrafts,
-  higher card limits). Prefer savings, investment, offshore or fee-saving products.
+  In a fraud brief, mention ONLY the flagged payment's own facts (amount, merchant, country,
+  channel, date and time). Do not mention income, balances, card balance, limits, loans,
+  debt ratios, products, investment, savings or credit.
+- Affordability: if debt_to_annual_income is above 2.0, or card_utilisation_pct is 70 or more,
+  do not suggest new credit (loans, overdrafts, higher card limits). Prefer savings, investment,
+  offshore or fee-saving products. If card_utilisation_pct is 70 or more, mention the card balance
+  in Watch out. card_balance_zar is what the client owes on credit cards today.
+  Card balances are debt too: never describe a client as having no debt if card_balance_zar is above 0.
 - If the data does not support a suggestion, say what the RM should ask instead.
 - Plain, professional English. No greetings, no sign-off, no markdown headings.
+- Never write field names from the data (like offshore_balance_usd); describe them in plain words.
 
 Format, at most 160 words:
 Headline: one sentence.
@@ -93,6 +102,8 @@ def build_facts(client: dict) -> dict:
         "tfsa_balance_zar": d["tfsa_balance_zar"],
         "offshore_balance_usd": d["offshore_balance_usd"],
         "credit_limit_zar": d["credit_limit_zar"],
+        "card_balance_zar": d["card_balance_zar"],
+        "card_utilisation_pct": d["card_utilisation_pct"],
         "loans_outstanding_zar": d["loans_outstanding_zar"],
         "has_home_loan": bool(d["has_home_loan"]),
         "has_vehicle_finance": bool(d["has_vehicle_finance"]),
@@ -120,24 +131,30 @@ def build_facts(client: dict) -> dict:
 
 # ----------------------------------------------------------------------------- ask the model
 def ask_llm(facts: dict) -> dict:
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {API_KEY}",
-                 "X-Title": "RM Copilot"},                 # shows up in your OpenRouter activity log
-        json={"model": MODEL,
-              "temperature": 0.2,                          # low = steady, factual wording
-              "messages": [{"role": "system", "content": SYSTEM_PROMPT},
-                           {"role": "user", "content": json.dumps(facts, indent=2)}]},
-        timeout=90,
-    )
-    if response.status_code != 200:
-        raise RuntimeError(f"OpenRouter returned {response.status_code}: {response.text[:300]}")
-    body = response.json()
-    usage = body.get("usage") or {}
-    return {"text": body["choices"][0]["message"]["content"].strip(),
-            "model": body.get("model", MODEL),
-            "input_tokens": usage.get("prompt_tokens"),
-            "output_tokens": usage.get("completion_tokens")}
+    payload = {"model": MODEL,
+               "temperature": 0.2,
+               "messages": [{"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": json.dumps(facts, indent=2)}]}
+    if "deepseek.com" in BASE_URL:
+        payload["thinking"] = {"type": "disabled"}         # short rule-following task: no hidden reasoning to pay for
+
+    for attempt in range(1, 4):                            # up to 3 tries
+        response = requests.post(f"{BASE_URL}/chat/completions",
+                                 headers={"Authorization": f"Bearer {API_KEY}"},
+                                 json=payload, timeout=90)
+        if response.status_code == 429 and attempt < 3:    # rate-limited: wait, then try again
+            wait = 30 * attempt
+            print(f"  rate-limited, waiting {wait}s (attempt {attempt}/3)...")
+            time.sleep(wait)
+            continue
+        if response.status_code != 200:
+            raise RuntimeError(f"LLM returned {response.status_code}: {response.text[:300]}")
+        body = response.json()
+        usage = body.get("usage") or {}
+        return {"text": body["choices"][0]["message"]["content"].strip(),
+                "model": body.get("model", MODEL),
+                "input_tokens": usage.get("prompt_tokens"),
+                "output_tokens": usage.get("completion_tokens")}
 
 
 # ----------------------------------------------------------------------------- save

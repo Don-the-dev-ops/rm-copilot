@@ -22,7 +22,10 @@ Principles:
 
 Known simplifications (fine for a demo, say so if asked):
 - Account balances are point-in-time snapshots; they aren't rebuilt from transactions.
-- Credit card spend posts to the transactional account; cards have no statements.
+- Credit card spend posts to the transactional account; cards have no statements. Each credit
+  card carries a point-in-time current_balance_zar (what the client owes today), built from the
+  last 30 days of card spend plus a repayment habit. It has its own random stream, so adding it
+  left every other table byte-for-byte the same.
 - Loan size uses today's income even for older loans.
 
 Usage:
@@ -99,6 +102,9 @@ LOANS = [
 MAX_DEBT_SERVICE_SHARE = 0.40  # banks won't lend if instalments exceed ~40% of gross income
 
 # TFSA annual contribution limits by tax year (year the tax year starts, 1 March)
+# How clients use a credit card: (share of clients, what they owe as described in add_card_balances)
+CARD_HABITS = {"transactor": 0.55, "revolver": 0.35, "stretched": 0.10}
+
 TFSA_ANNUAL_LIMITS = {**{y: 30_000 for y in (2015, 2016)}, **{y: 33_000 for y in (2017, 2018, 2019)},
                       **{y: 36_000 for y in range(2020, 2026)}, 2026: 46_000}
 TFSA_LIFETIME = 500_000
@@ -181,6 +187,41 @@ def txn(rng, account_id, card_id, day, hour, amount, merchant, category, country
             "direction": "credit" if amount > 0 else "debit",
             "merchant_name": merchant, "merchant_category": category,
             "country_code": country, "channel": channel}
+
+
+def add_card_balances(cards: list, txns: list, seed: int, run_date: date) -> None:
+    """Give every credit card a current balance: what the client owes on the run date.
+
+    Uses its OWN random stream (seeded from the main seed), so the main stream that builds
+    every other table is untouched: same seed, same bank, plus one new column.
+
+    Habits:
+      transactor  pays in full each month -> owes only the last 30 days of card spend
+      revolver    carries some debt       -> last 30 days of spend + 10-40% of the limit
+      stretched   close to the limit      -> 80-98% of the limit
+    Every balance is capped at the limit. Debit cards owe nothing (None).
+    """
+    card_rng = random.Random(f"{seed}:card_balances")
+    since = (run_date - timedelta(days=30)).isoformat()
+    recent = {}  # card_id -> card spend in the last 30 days, as a positive number
+    for t in txns:
+        if t["card_id"] and t["amount_zar"] < 0 and t["txn_ts"][:10] > since:
+            recent[t["card_id"]] = recent.get(t["card_id"], 0.0) - t["amount_zar"]
+
+    habits, weights = list(CARD_HABITS), list(CARD_HABITS.values())
+    for c in cards:
+        if c["card_type"] == "Debit":
+            c["current_balance_zar"] = None
+            continue
+        limit = float(c["credit_limit_zar"])
+        habit = card_rng.choices(habits, weights)[0]
+        if habit == "transactor":
+            owed = recent.get(c["card_id"], 0.0)
+        elif habit == "revolver":
+            owed = recent.get(c["card_id"], 0.0) + limit * card_rng.uniform(0.10, 0.40)
+        else:
+            owed = limit * card_rng.uniform(0.80, 0.98)
+        c["current_balance_zar"] = round(min(owed, limit), 2)
 
 
 def generate(n_clients: int, months: int, seed: int, run_date: date):
@@ -367,6 +408,8 @@ def generate(n_clients: int, months: int, seed: int, run_date: date):
 
         client_txns.sort(key=lambda t: t["txn_ts"])  # one account's history in time order
         txns.extend(client_txns)
+
+    add_card_balances(cards, txns, seed, run_date)  # own random stream: other tables stay identical
 
     bronze = {"relationship_managers": rms, "clients": clients, "accounts": accounts,
               "cards": cards, "loans": loans, "transactions": txns}
