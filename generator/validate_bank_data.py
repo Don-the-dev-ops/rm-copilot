@@ -172,6 +172,21 @@ def run_checks(t, story, planted_ids, run_date: date, months: int, rep: Report):
                and abs(float(c["credit_limit_zar"]) - CREDIT_LIMIT_X_INCOME * income[acct_client[c["account_id"]]]) > 1_000],
               sum(c["card_type"] != "Debit" for c in cards.values()))
 
+    # ---------- realism: card balances (what the client owes today) ----------
+    credit = [c for c in cards.values() if c["card_type"] != "Debit"]
+    rep.check("realism", "debit cards carry no balance",
+              [c["card_id"] for c in cards.values() if c["card_type"] == "Debit" and c.get("current_balance_zar")],
+              len(cards) - len(credit))
+    rep.check("realism", "credit card balance between 0 and the limit",
+              [f"{c['card_id']} owes {c.get('current_balance_zar')!r} on limit {c['credit_limit_zar']}" for c in credit
+               if not c.get("current_balance_zar")
+               or not 0 <= float(c["current_balance_zar"]) <= float(c["credit_limit_zar"])], len(credit))
+    stretched = sum(float(c["current_balance_zar"]) >= 0.8 * float(c["credit_limit_zar"])
+                    for c in credit if c.get("current_balance_zar"))
+    rep.check("realism", "5-20% of credit cards are stretched (owe 80%+ of the limit)",
+              [] if 0.05 <= stretched / max(len(credit), 1) <= 0.20
+              else [f"{stretched} of {len(credit)} stretched ({stretched / max(len(credit), 1):.0%})"], len(credit))
+
     # ---------- realism: loans ----------
     fails, debt = [], defaultdict(float)
     for l in t["loans"]:
