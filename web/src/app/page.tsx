@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { WelcomeVideo } from "@/components/welcome-video";
 
 export const metadata: Metadata = { title: { absolute: "Welcome | Iris Bank" } };
@@ -14,13 +16,10 @@ export default function WelcomePage() {
           <br />
           <span className="text-gold whitespace-nowrap">Iris Bank</span>
         </h1>
-        {/* Get started has no destination yet: the next screen hasn't been built. */}
-        <Button
-          disabled
-          className="relative h-14 w-full max-w-[18rem] overflow-hidden rounded-full border-black bg-[linear-gradient(180deg,#4a4a4f_0%,#1d1d20_48%,#050506_52%,#1a1a1c_100%)] text-[16px] font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-1px_0_rgba(255,255,255,0.08),0_6px_16px_-6px_rgba(0,0,0,0.55)] before:pointer-events-none before:absolute before:inset-x-4 before:top-[3px] before:h-[45%] before:rounded-full before:bg-[linear-gradient(180deg,rgba(255,255,255,0.32),rgba(255,255,255,0.04))] before:content-[''] disabled:opacity-100"
-        >
+        {/* A link styled as the pill: it navigates, so it is an <a>, not a button. */}
+        <Link href="/start" className={cn(buttonVariants({ variant: "gloss", size: "pill" }), "w-full max-w-[18rem]")}>
           <span className="relative">Get started</span>
-        </Button>
+        </Link>
       </div>
     </main>
   );
