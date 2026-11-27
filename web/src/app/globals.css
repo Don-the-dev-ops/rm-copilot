@@ -1,26 +1,195 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Iris Bank / RM Copilot.
+ * A stone desk with one white sheet per screen: the sheet is where the work
+ * is. Navy carries the brand and the data; orange is a mark (never text on
+ * light surfaces, 2.2:1). Risk red is reserved for risk signals and flagged
+ * transactions. Contrast of every text pair is at least 5.5:1.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand */
+  --navy: #14286e;
+  --navy-deep: #0e1c4f;
+  --navy-tint: #ebeef6;
+  --on-navy-muted: #b9c2dc;
+  --orange: #f28a1f;
+
+  /* Surfaces */
+  --stone: #f1efea;
+  --sheet: #ffffff;
+  --band: #f8f7f3;
+  --rule: #e7e3da;
+  --rule-strong: #cfc9bc;
+  --chart-grey: #b8b2a5;
+
+  /* Ink */
+  --ink: #1a2033;
+  --ink-muted: #585e70;
+
+  /* Risk */
+  --risk: #a12a2a;
+  --risk-tint: #fbefed;
+
+  /* shadcn semantic tokens */
+  --background: var(--stone);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--navy);
+  --primary-foreground: #ffffff;
+  --secondary: var(--navy-tint);
+  --secondary-foreground: var(--navy);
+  --muted: var(--band);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--navy-tint);
+  --accent-foreground: var(--navy);
+  --destructive: var(--risk);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--navy);
+  --chart-1: var(--navy);
+  --chart-2: var(--risk);
+  --chart-3: var(--chart-grey);
+  --chart-4: var(--rule-strong);
+  --chart-5: var(--orange);
+  --radius: 0.375rem;
+  --sidebar: var(--stone);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--navy);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--sheet);
+  --sidebar-accent-foreground: var(--navy);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--navy);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-heading: var(--font-serif);
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --color-navy: var(--navy);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-tint: var(--navy-tint);
+  --color-on-navy-muted: var(--on-navy-muted);
+  --color-orange: var(--orange);
+  --color-stone: var(--stone);
+  --color-sheet: var(--sheet);
+  --color-band: var(--band);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-chart-grey: var(--chart-grey);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-risk: var(--risk);
+  --color-risk-tint: var(--risk-tint);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* One focus style: a 2px navy outline with a small gap. shadcn controls
+     draw their own ring, so they opt out of the outline. */
+  :focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 2px;
+  }
+  [data-slot]:focus-visible {
+    outline: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Metallic gold lettering on white, after the VISA mark on the card in the
+     welcome video. The lightest stop (#bf8336) keeps 3.2:1 on white, above the
+     3:1 needed for large text; the darker stops give the metal its depth. */
+  .text-gold {
+    color: #a8702b;
+    background-image: linear-gradient(172deg, #8c5a1c 0%, #bf8336 34%, #7e4e16 58%, #b47a30 80%, #8c5a1c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding-right: 0.08em; /* room for the italic overhang */
+  }
+  /* Amounts and counts: lining, tabular, never wrapped. */
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+    white-space: nowrap;
+  }
+  /* Headline figures set in the serif. */
+  .num-serif {
+    font-family: var(--font-serif);
+    font-variant-numeric: tabular-nums lining-nums;
+    white-space: nowrap;
+  }
 }
